@@ -45,7 +45,7 @@ int UartCanDecode::DetectMsgType(unsigned char *buf,unsigned char *type)
 			case CANMSG:
 			case SYSMSG:	
 			case CANSPEED:
-				 printf("%s type %x\n",__func__,*type);	
+				 //printf("%s type %x\n",__func__,*type);	
 				 ret=1;
 				 break;
 			default:

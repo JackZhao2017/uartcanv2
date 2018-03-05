@@ -33,7 +33,8 @@ void UartCanParse::WaitParse(void)
 
 void *UartCanParse::UartCanParsefunc(void *arg)
 {
-	UartCanParse  *ptr=(UartCanParse*)arg;
+	// UartCanParse  *ptr=(UartCanParse*)arg;
+	UartCanParse* ptr = reinterpret_cast<UartCanParse*>(arg);
 	unsigned char buf[256];
 	int getlen=0,i=0;
 	memset(buf,0,sizeof(buf));
@@ -43,11 +44,16 @@ void *UartCanParse::UartCanParsefunc(void *arg)
 		unsigned char type=0;
 
 		ptr->WaitParse();
-		
+
+		if(ptr->thread_exit){
+			break;
+		}	
+
 		getlen=ptr->Ringbuffer->GetbufferHeardata(buf,256);
 
 		for(syncindex=0;syncindex<getlen;syncindex++)
 		{
+			 //int  orgindex=syncindex;
      		 if(!(ptr->decode->DetectMsgSync(buf,syncindex))){
      		 	continue;
      		 }
@@ -63,8 +69,12 @@ void *UartCanParse::UartCanParsefunc(void *arg)
 			 		syncindex-=1;
 			 		break;
 			 	}
-			 	ptr->decode->ParseMsg(&buf[syncindex],type);
-			 	syncindex+=type-1;
+
+			 	if(ptr->decode->ParseMsg(&buf[syncindex],type)){  // if crc8detect  success syncindex  should be add type ,else  add 1
+			 		syncindex+=type-1;
+			 	}
+			 }else{
+			 	syncindex-=1;
 			 }			 
 	    }
 
@@ -99,10 +109,11 @@ int UartCanParse::Init(void)
 void UartCanParse::Release(void)
 {
 	thread_exit=1;
+	uartcan_semaphore_post(&uartcan_parse_sem);
+	//uartcan_sem_post();
+	exitThread();
 	delete decode;
 	delete Ringbuffer;
-	uartcan_sem_post();
-	exitThread();
 	printf("%s\n",__func__ );
 }
 
