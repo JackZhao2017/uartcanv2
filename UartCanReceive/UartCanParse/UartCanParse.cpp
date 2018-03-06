@@ -100,17 +100,24 @@ void UartCanParse::SetSpeedParseCallback(Callback callback)
 
 int UartCanParse::Init(void)
 {
+
 	Ringbuffer=new UartCanRingbuffer;
     decode = new UartCanDecode;
-    Ringbuffer->RingbufferInit(256);
+	if(!(Ringbuffer->RingbufferInit(256))){
+		goto err;
+	}
 	launchThread(UartCanParsefunc,this);
+	return 1;
+err:
+	delete decode;
+	delete Ringbuffer;
+	return 0;
 }
 
 void UartCanParse::Release(void)
 {
 	thread_exit=1;
 	uartcan_semaphore_post(&uartcan_parse_sem);
-	//uartcan_sem_post();
 	exitThread();
 	delete decode;
 	delete Ringbuffer;

@@ -1,7 +1,7 @@
 
-CROSS_COMPILE=/mnt/hgfs/android-ndk-r14b/my_toolchain/bin/aarch64-linux-android-
+# CROSS_COMPILE=/mnt/hgfs/android-ndk-r14b/my_toolchain/bin/aarch64-linux-android-
 
-#CROSS_COMPILE=/home/jack/Desktop/imax6/linux3.0.35/toolchain/gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux/bin/arm-linux-gnueabihf-
+CROSS_COMPILE=/home/jack/Desktop/imax6/linux3.0.35/toolchain/gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux/bin/arm-linux-gnueabihf-
 
 OBJDIR = .
 SRCDIR = .
@@ -34,9 +34,9 @@ UartCan.a::UartCan.cpp UartCanUtil/*cpp UartCanSend/*cpp  UartCanSend/Encode/*cp
 	rm *.o
 
 
-UartCanCpp.out:example.cpp 
+UartCanCpp.out:example.cpp  UartCan.cpp UartCanUtil/*cpp UartCanSend/*cpp  UartCanSend/Encode/*cpp UartCanReceive/UartCanRead/*cpp   UartCanReceive/UartCanParse/*cpp   UartCanReceive/*cpp 
 			    
-	${CPLUS}  -O3 ${CINC}  $^ UartCan.a -o $@ -lpthread
+	${CPLUS}  -O3 ${CINC}  $^ -o $@ -lpthread
 
 
 DEMO=UartCanCpp.out

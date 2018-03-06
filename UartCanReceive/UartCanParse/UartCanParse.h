@@ -5,6 +5,8 @@
 #include "UartCanDecode.h"
 #include "UartCanRingbuffer.h"
 #include "UartCanSemaphore.h"
+
+
 namespace uartcan{
 
 
@@ -29,6 +31,7 @@ private:
 	UartCanDecode       *decode;
 	UartCanRingbuffer   *Ringbuffer;
 	uartcan_semaphore_t uartcan_parse_sem;
+	
 };
 
 

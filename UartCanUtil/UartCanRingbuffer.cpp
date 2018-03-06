@@ -96,7 +96,7 @@ int  UartCanRingbuffer::GetbufferHeardata(unsigned char *buf,int len)
 		len=ringBuffer->num;
 	}
 	unlock;
-	printf("%s %d\n",__func__,len );
+	// printf("%s %d\n",__func__,len );
 	if(ringBuffer->getaddr+len>ringBuffer->mark){
 		memcpy(buf,&ringBuffer->data[ringBuffer->getaddr],ringBuffer->size-ringBuffer->getaddr);
 		memcpy(&buf[ringBuffer->size-ringBuffer->getaddr],&ringBuffer->data[0],ringBuffer->getaddr+len-ringBuffer->size);
@@ -109,7 +109,7 @@ int  UartCanRingbuffer::GetbufferHeardata(unsigned char *buf,int len)
 
 int  UartCanRingbuffer::AddBufferHearaddr(int len)
 {
-	printf("%s %d \n",__func__,len );
+    //printf("%s %d \n",__func__,len );
 	lock;
 	ringBuffer->num-=len;
 	ringBuffer->getaddr=(ringBuffer->getaddr+len)%ringBuffer->size; 

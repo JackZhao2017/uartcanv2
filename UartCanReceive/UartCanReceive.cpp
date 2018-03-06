@@ -33,7 +33,6 @@ int UartCanReceive::Init(int fd)
 	uartRead  =  new UartCanRead;
 
 	uartRead ->Init(fd);
-
 	
 	return 1;
 }

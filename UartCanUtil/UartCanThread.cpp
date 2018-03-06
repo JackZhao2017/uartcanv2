@@ -76,7 +76,7 @@ int UartCanThread::exitThread(void)
 {
     int rc = 0;
     printf("%s start\n",__func__ );  
-    if (pthread_join(thread_pid, NULL) != 0) {
+    if(pthread_join(thread_pid, NULL) != 0) {
 
     }
 

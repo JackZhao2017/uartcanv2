@@ -64,7 +64,7 @@ int UartCan::devInit(const char *dev,int  baudrate)
 	int fd=-1;
 
 	if(fd<0){
-	   fd = open(dev, O_RDWR | O_NOCTTY |O_NONBLOCK);
+	   fd = open(dev, O_RDWR | O_NOCTTY|O_NONBLOCK);//O_NONBLOCK
 	   if (fd <0) {
 			goto err;
 		}
@@ -104,6 +104,7 @@ err:
 
 void UartCan::devRelease(void)
 {
+	printf("%s\n",__func__ );
 	close(devfd);
 	devfd=-1;
 }
@@ -114,15 +115,19 @@ int UartCan::UartCanInit(const char *dev,int bandrate)
 	canreceive=new UartCanReceive;
 
 	devfd	  =devInit(dev,bandrate);
+	if(devfd<0){
+		return 0;
+	}
 	cansend->Init(devfd);
 	canreceive->Init(devfd);
+	return 1;	
 }
 
 
 
 void UartCan::UartCanRelease(void)
-{
-	cansend->Release();
+{	
+	cansend->Release();	
 	canreceive->Release();
 	devRelease();
 	delete cansend;
@@ -139,10 +144,9 @@ void  UartCan::setCallback(Callback callback)
 	canreceive->SetReceiveSpeedCallback(callback);
 }
 
-void UartCan::PutAdasinfoToUartCan(void *adasInfo)
+void UartCan::PutAdasinfoToUartCan(const ADAS_INFO *adasInfo)
 {
-	ADAS_INFO *info=(ADAS_INFO*)adasInfo;
-	cansend->StartCanSendOne(info);
+	cansend->StartCanSendOne(adasInfo);
 }
 
 };

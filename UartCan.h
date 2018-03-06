@@ -19,9 +19,10 @@ public:
 
 	int  UartCanInit(const char *dev,int bandrate);
 
+
 	void UartCanRelease(void);
 
-	void PutAdasinfoToUartCan(void *adasInfo);
+	void PutAdasinfoToUartCan(const ADAS_INFO *adasInfo);
 
 	void GetUartCanSpeedresult(float *speed);	
 
@@ -30,8 +31,9 @@ public:
 private:
 
 	int  	 devfd;
-	int  	 devInit(const char *dev,int bandrate);
-	void 	 devRelease(void);
+	int      devInit(const char *dev,int bandrate);
+	void     devRelease(void);	
+	
 	speed_t  baudrate_map(unsigned long b);
 	
 };

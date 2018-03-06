@@ -14,7 +14,7 @@ public:
 	~UartCanSend();
 	ADAS_INFO       Adas_Info;
 	
-	void  			StartCanSendOne(ADAS_INFO *adasinfo);
+	void  			StartCanSendOne(const ADAS_INFO *adasinfo);
 	void  			Init(int fd);
 	void			Release(void);
 	void 			WaitCanSend(ADAS_INFO *adasinfo);

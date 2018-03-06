@@ -4,18 +4,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/epoll.h> 
+#include <sys/timerfd.h>
+#include <signal.h>
 #include <fcntl.h> 
 #include <unistd.h>
 #include <errno.h> 
+#include <sys/time.h>
+#include <errno.h>
 
 
 namespace uartcan{
+#define handle_error(msg) \
+        do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
+
+static struct itimerval g_timevalue; 
 extern UartCanParse *g_uartParse;
+
+uint64_t tot_exp = 0;
 
 UartCanRead::UartCanRead()
 {
-	 dev_fd=-1;
+	 g_dev_fd=-1;
 	 printf("%s\n",__func__ );
 }
 UartCanRead::~UartCanRead()
@@ -23,92 +33,138 @@ UartCanRead::~UartCanRead()
 	 printf("%s\n",__func__ );
 }
 
+void UartCanRead::timerfd_handler(int fd)
+{
+    uint64_t exp = 0;
+    
+    read(fd, &exp, sizeof(uint64_t)); 
+    tot_exp += exp;
+    printf("read: %llu, total: %llu\n", (unsigned long long)exp, (unsigned long long)tot_exp);
+
+    return;
+}
+
+int UartCanRead::epoll_add_fd(int fd)
+{
+    int ret;
+    struct epoll_event event;
+
+    memset(&event, 0, sizeof(event));
+    event.data.fd = fd;
+    event.events = EPOLLIN | EPOLLET;
+
+    ret = epoll_ctl(g_epfd, EPOLL_CTL_ADD, fd, &event);
+    if(ret < 0) {
+        printf("epoll_ctl Add fd:%d error, Error:[%d:%s]\n", fd, errno, strerror(errno));
+        return -1;
+    }
+    printf("epoll add fd:%d--->%d success\n", fd, g_epfd);
+    return 0;    
+}
+int UartCanRead::timerfd_init()
+{
+    int tmfd;
+    int ret;
+    struct itimerspec new_value;
+
+    new_value.it_value.tv_sec = 1;
+    new_value.it_value.tv_nsec = 0;
+    new_value.it_interval.tv_sec = 1;
+    new_value.it_interval.tv_nsec = 0;
+    
+    tmfd = timerfd_create(CLOCK_REALTIME, 0);
+    if (tmfd < 0) {
+        printf("timerfd_create error, Error:[%d:%s]\n", errno, strerror(errno));
+        return -1;
+    }
+
+    ret = timerfd_settime(tmfd, 0, &new_value, NULL);
+    if (ret < 0) {
+        printf("timerfd_settime error, Error:[%d:%s]\n", errno, strerror(errno));
+        close(tmfd);
+        return -1;
+    }
+
+    if (epoll_add_fd(tmfd)) {
+        close(tmfd);
+        return -1;
+    }
+    g_tim_fd = tmfd;
+    return 0;
+}
+int UartCanRead::epollfd_init(void)
+{
+    int epfd;
+
+    epfd = epoll_create(256); 
+    if (epfd < 0) {
+        printf("epoll_create error, Error:[%d:%s]\n", errno, strerror(errno));
+        return -1;
+    }
+    g_epfd = epfd;
+    printf("epoll fd:%d create success\n", epfd);
+
+    return epfd;
+}
+
 void *UartCanRead::UartCanReadfunc(void *arg)
 {
-	// UartCanRead *ptr=(UartCanRead*)arg;
   UartCanRead* ptr = reinterpret_cast<UartCanRead*>(arg);
   int i=0;
+  int fd_cnt = 0;
+  int sfd;
+  struct epoll_event events[256];    
   unsigned char buf[1024];
-	int epfd    = epoll_create(256);
-
-	struct epoll_event _ev;       //epoll结构填充   
-  _ev.events  = EPOLLIN;         //初始关心事件为读  
-  _ev.data.fd = ptr->dev_fd; 
-
-  struct epoll_event revs[64]; 
-  int timeout = 500;  
-  int num = 0;  
-  int done = 0; 
-
-  epoll_ctl(epfd,EPOLL_CTL_ADD,ptr->dev_fd,&_ev);  
-
+  memset(events, 0, sizeof(events)); 
 	while(1)
 	{
-    timeout=500;
-		switch((num = epoll_wait(epfd,revs,64,timeout)))
-		{
-			      case -1:
-				        perror("epoll_wait");
-				        break;
-            case 0:                  //返回0 ，表示监听超时  
-                g_uartParse->PostParse(buf,0);
-                printf("timeout\n");  
-                break;
-            default:
-            	int i;
-            	for(i=0;i<num;i++)
-            	{
-            		int fd=revs[i].data.fd;
- 					      if(revs[i].events & EPOLLIN)  
-            		{    
-                			ssize_t _s = read(fd,buf,sizeof(buf)-1);  
-                			if(_s > 0)  
-               			  {  	
-               			 //    		int j=0;
-									          // for(j=0;j<_s;j++){
-										         //    printf("0x%02x ",buf[j] );
-									          // } 
-                   //          printf("\n");
-                            
+    fd_cnt = epoll_wait(ptr->g_epfd, events, 256, -1); 
+    for(i = 0; i < fd_cnt; i++) 
+    {   
+            sfd = events[i].data.fd;
+            if(events[i].events & EPOLLIN) 
+            {   
+                if (sfd == ptr->g_tim_fd) 
+                {
+                      ptr->timerfd_handler(sfd); 
+                }else{
+                            int _s=read(sfd,buf,sizeof(buf)-1);  
+                            int j=0;     
+                            for(j=0;j<_s;j++)
+                            {
+                                printf("0x%x ",buf[j]);
+                            }
+                            printf("\n");  
                             g_uartParse->PostParse(buf,_s);
-  									        
-                    				_ev.events = EPOLLOUT | EPOLLET;  
-                    				_ev.data.fd = fd;  
-                    				epoll_ctl(epfd,EPOLL_CTL_ADD,ptr->dev_fd,&_ev);   
-               				}  
-               			  else if(_s == 0)  
-                			{  
-               					    printf("client:%d close\n",fd);  
-                				    epoll_ctl(epfd,EPOLL_CTL_DEL,fd,NULL);  
-  
-                				    close(fd);  
-               				}  
-                			else  
-               			  {  
-                				    perror("read");  
-               				}  
-           			}  
-            	}
-            	break;
-		}
+                }   
+            }   
+    } 
 		if(ptr->thread_exit){
-			break;
+			  break;
 		}
 	}
 	printf("%s  exit\n",__func__ );
 	pthread_exit(0);
+  return NULL;
 }
 int UartCanRead::Init(int fd)
 {
-	dev_fd=fd;
-	launchThread(UartCanReadfunc,this);
+	   g_dev_fd=fd;
+     epollfd_init();
+     epoll_add_fd(fd);
+     pthread_create(&thread_pid,
+                   NULL,
+                   UartCanReadfunc,
+                   this);
+    return 1;
 }
 
 void UartCanRead::Release(void)
 {
-	thread_exit=1;
-	uartcan_sem_post();
-	exitThread();
-	printf("%s\n",__func__ );
+	   thread_exit=1;
+     timerfd_init();
+     if(pthread_join(thread_pid, NULL) != 0) {
+        printf("%s faild\n",__func__ );
+     }
 }
 };

@@ -21,12 +21,6 @@ void UartCanCrc8 ::crc8_populate_lsb(unsigned char table[CRC8_TABLE_SIZE], unsig
 		for (j = 0; j < CRC8_TABLE_SIZE; j += 2*i)
 			table[i+j] = table[j] ^ t;
 	}
-	// for(i=0;i<CRC8_TABLE_SIZE;i++){	
-	// 		if(i%16==0)
-	// 			printf("\r\n");
-	// 		printf("0x%02x ",table[i]);
-	// }
-	// printf("crc lsb poly =0x%02x\r\n",polynomial);
 }
 
 unsigned char UartCanCrc8 :: crc8( unsigned char *pdata, unsigned char nbytes, unsigned char crc)
@@ -41,7 +35,6 @@ unsigned char UartCanCrc8 :: crc8creator(unsigned char *msg,unsigned char start,
 {
 	unsigned char crc=0;
 	crc=crc8(&msg[start],len,0);
-	// printf("%s %x\n",__func__,crc );
 	return crc;
 }
 

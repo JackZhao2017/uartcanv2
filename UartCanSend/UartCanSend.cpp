@@ -23,7 +23,7 @@ UartCanSend::~UartCanSend()
 	printf("~UartCanSend()\n" );
 }
 
-void UartCanSend::StartCanSendOne(ADAS_INFO *adasinfo)
+void UartCanSend::StartCanSendOne(const ADAS_INFO *adasinfo)
 {
 	uartcan_lock();
 	memcpy(&Adas_Info,adasinfo,sizeof(Adas_Info));
@@ -42,20 +42,26 @@ void UartCanSend::WaitCanSend(ADAS_INFO *adasinfo)
 void *UartCanSend::UartCanSendfunc(void *arg)
 {	
 	int i=0;
-	UartCanSend  *ptr=(UartCanSend *)arg;
+	// UartCanSend  *ptr=(UartCanSend *)arg;
+	UartCanSend* ptr = reinterpret_cast<UartCanSend*>(arg);
+	
 	while(1)
 	{
 		ptr->WaitCanSend(&ptr->Adas_Info);
-		
+
+		if(ptr->thread_exit){
+			break;
+		}	
+
 		ptr->convertadasInfo2uartstream(&ptr->Adas_Info,ADASCANID,ptr->stream);
 
 		write(ptr->dev_fd,ptr->stream,CANTXMSGSIZE);
 		
-		for(i=0;i<CANTXMSGSIZE;i++)
-		{
-			printf("0x%x ",ptr->stream[i] );
-		}
-		printf("\n");
+		// for(i=0;i<CANTXMSGSIZE;i++)
+		// {
+		// 	printf("0x%x ",ptr->stream[i] );
+		// }
+		// printf("\n");
 		
 		if(ptr->thread_exit){
 			break;

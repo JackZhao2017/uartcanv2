@@ -1,7 +1,16 @@
-#include "UartCan.h"
 
+#include "UartCan.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/epoll.h> 
+#include <sys/timerfd.h>
+#include <signal.h>
+#include <fcntl.h> 
+#include <unistd.h>
+#include <errno.h> 
+#include <sys/time.h>
+#include <errno.h>
+#include <termios.h>
 
 using namespace uartcan;
 
@@ -11,20 +20,18 @@ void SpeedCallback(float *speed)
 	printf("%s %.1f\n",__func__,*speed);
 }
 
+
 int main(int argc, char const *argv[])
 {
-	UartCan uarcan;
-	uarcan.UartCanInit("/dev/ttymxc1",115200);
-	uarcan.setCallback(SpeedCallback);
-	ADAS_INFO adasInfo;
+	int count=0;
+	UartCan *uartcan=new UartCan;
+	uartcan->UartCanInit("/dev/ttymxc1",115200);
 	while(1)
 	{
-		float speed;
-
-		uarcan.PutAdasinfoToUartCan((void*)&adasInfo);
-		printf("%.1f\n",speed );
 		sleep(1);
+		if(++count>10)
+			break;
 	}
-	uarcan.UartCanRelease();
+	uartcan->UartCanRelease();
 	return 0;
 }
