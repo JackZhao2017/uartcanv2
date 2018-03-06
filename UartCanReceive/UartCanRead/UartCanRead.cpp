@@ -72,7 +72,7 @@ int UartCanRead::timerfd_init()
     new_value.it_interval.tv_sec = 1;
     new_value.it_interval.tv_nsec = 0;
     
-    tmfd = timerfd_create(CLOCK_REALTIME, 0);
+    tmfd = timerfd_create(CLOCK_REALTIME, 0);//CLOCK_MONOTONIC
     if (tmfd < 0) {
         printf("timerfd_create error, Error:[%d:%s]\n", errno, strerror(errno));
         return -1;
@@ -145,11 +145,11 @@ void *UartCanRead::UartCanReadfunc(void *arg)
 	}
 	printf("%s  exit\n",__func__ );
 	pthread_exit(0);
-  return NULL;
+    return NULL;
 }
 int UartCanRead::Init(int fd)
 {
-	   g_dev_fd=fd;
+	 g_dev_fd=fd;
      epollfd_init();
      epoll_add_fd(fd);
      pthread_create(&thread_pid,
@@ -161,10 +161,12 @@ int UartCanRead::Init(int fd)
 
 void UartCanRead::Release(void)
 {
-	   thread_exit=1;
+	 thread_exit=1;
      timerfd_init();
      if(pthread_join(thread_pid, NULL) != 0) {
         printf("%s faild\n",__func__ );
      }
+     close(g_tim_fd);
+     close(g_epfd);
 }
 };

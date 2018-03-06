@@ -87,6 +87,7 @@ void *UartCanParse::UartCanParsefunc(void *arg)
 	
 	printf("%s  exit\n",__func__ );	
 	pthread_exit(0);
+	return NULL;
 }
 
 int UartCanParse::GetSpeedParseResult(float *speed)
@@ -119,6 +120,7 @@ void UartCanParse::Release(void)
 	thread_exit=1;
 	uartcan_semaphore_post(&uartcan_parse_sem);
 	exitThread();
+	Ringbuffer->RingbufferRelease();
 	delete decode;
 	delete Ringbuffer;
 	printf("%s\n",__func__ );

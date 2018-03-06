@@ -69,7 +69,7 @@ void *UartCanSend::UartCanSendfunc(void *arg)
 	}	
 	printf("%s exit\n",__func__ );
 	pthread_exit(0);
-
+	return NULL;
 }
 
 void UartCanSend::Init(int fd)

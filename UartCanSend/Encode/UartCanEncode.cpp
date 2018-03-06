@@ -113,6 +113,7 @@ int UartCanEncode::convertadasInfo2uartstream(ADAS_INFO *adascan_info,unsigned i
 		convertadasInfo2msg(adascan_info,&adasMsg);
 		convertuartMsg2canMsg(&adasMsg ,&canMsg);
 		convertcanMsg2stream(&canMsg ,canid,buf);
+		return 1;
 }
 
 };
