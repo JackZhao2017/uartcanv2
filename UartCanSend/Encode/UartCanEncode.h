@@ -110,7 +110,10 @@ public:
 private:
 	  int  count;
       int  msgcount;
+      long long delay_time_right;
+      long long delay_time_left;
 	  int  msgcounter(void);
+	  long long currenttime();
 };
 
 };

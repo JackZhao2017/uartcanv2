@@ -2,14 +2,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 namespace uartcan{
+
 	
 UartCanEncode::UartCanEncode()
 {
 	printf("UartCanEncode()\n" );
 	stream=(unsigned char *)malloc(CANTXMSGSIZE);
 	msgcount=0;
+	delay_time_right=0;
+	delay_time_left=0;
 }
 
 UartCanEncode::~UartCanEncode()
@@ -18,6 +22,14 @@ UartCanEncode::~UartCanEncode()
 	free(stream);
 	msgcount=0;
 }
+
+long long UartCanEncode::currenttime(){
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    long long when = now.tv_sec * 1000LL + now.tv_usec / 1000;
+    return when;
+}
+
 
 int UartCanEncode:: msgcounter(void)
 {
@@ -76,7 +88,8 @@ int UartCanEncode::convertadasInfo2msg(ADAS_INFO *adascan_info,ADASMSG *adasMsg)
 				adasMsg->fcw_st=DISABLE;
 		}	
 
-		if(adascan_info->ldw_state==1){
+		if((adascan_info->ldw_state==1)||(delay_time_left)){
+
 				adasMsg->ldw_r=DISABLE;
 				adasMsg->ldw_right_info=DISABLE;
 				adasMsg->ldw_left_info=((int )(adascan_info->ldw_dis/LDW_FACTOR))&0xff;
@@ -85,7 +98,14 @@ int UartCanEncode::convertadasInfo2msg(ADAS_INFO *adascan_info,ADASMSG *adasMsg)
 				}else{
 					adasMsg->ldw_l=LDW_L_ALARM;
 				}
-		}else if(adascan_info->ldw_state==2){
+				if(delay_time_left==0){
+					delay_time_left=currenttime();
+				}else if(currenttime()-delay_time_left>1000){
+					delay_time_left=0;
+				}
+
+		}else if((adascan_info->ldw_state==2)||(delay_time_right)){
+
 				adasMsg->ldw_l=DISABLE;
 				adasMsg->ldw_left_info=DISABLE;
 				adasMsg->ldw_right_info=((int )(adascan_info->ldw_dis/LDW_FACTOR))&0xff;
@@ -94,6 +114,13 @@ int UartCanEncode::convertadasInfo2msg(ADAS_INFO *adascan_info,ADASMSG *adasMsg)
 				}else{
 					adasMsg->ldw_r=LDW_R_ALARM;
 				}
+				if(delay_time_right==0){
+					delay_time_right=currenttime();
+				}else if(currenttime()-delay_time_right>1000){
+					delay_time_right=0;
+				}
+
+
 		}else{
 				adasMsg->ldw_l=LDW_L_NORMAL;
 				adasMsg->ldw_r=LDW_R_NORMAL;
